@@ -11,23 +11,25 @@ A system tray app for Windows 11 that lets you switch audio output devices with 
 - **Left-click**: Cycle through the rotation-enabled devices
 - **Right-click**: Open the device list panel to toggle which devices are included in the rotation
 
-## Prerequisites
+## Development
+
+### Prerequisites
 
 - [mise](https://mise.jdx.dev/) - Tool version manager
 
-## Setup
+### Setup
 
 ```bash
 mise install
 ```
 
-## Development
+### Dev
 
 ```bash
 pnpm tauri dev
 ```
 
-## Build
+### Build
 
 ```bash
 pnpm tauri build
@@ -35,7 +37,7 @@ pnpm tauri build
 
 The `.msi` installer and `.exe` will be generated in `src-tauri/target/release/bundle/`.
 
-## Release
+### Release
 
 ```bash
 node scripts/release.mjs <version>
