@@ -1,5 +1,7 @@
 use serde::Serialize;
 use std::sync::Mutex;
+use std::time::Instant;
+use tauri::image::Image;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::webview::WebviewWindowBuilder;
 use tauri::{AppHandle, LogicalPosition, Manager, State, WebviewUrl};
@@ -156,8 +158,14 @@ fn show_popup_panel(app: &AppHandle) {
     match builder.build() {
         Ok(window) => {
             let app_handle = app.clone();
+            let created_at = Instant::now();
             window.on_window_event(move |event| {
                 if let tauri::WindowEvent::Focused(false) = event {
+                    // Ignore focus loss within first 500ms to prevent
+                    // the panel from closing immediately after creation
+                    if created_at.elapsed().as_millis() < 500 {
+                        return;
+                    }
                     if let Some(w) = app_handle.get_webview_window("device-panel") {
                         let _ = w.close();
                     }
@@ -197,7 +205,11 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
         app_state: Mutex::new(app_state),
     });
 
+    let icon = Image::from_bytes(include_bytes!("../icons/icon.png"))
+        .expect("Failed to load tray icon");
+
     TrayIconBuilder::with_id("main-tray")
+        .icon(icon)
         .tooltip(&tooltip)
         .on_tray_icon_event(|tray, event| match event {
             TrayIconEvent::Click {
