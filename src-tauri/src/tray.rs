@@ -101,18 +101,57 @@ fn handle_left_click(app: &AppHandle) {
     }
 }
 
-fn show_popup_panel(app: &AppHandle) {
-    let Some(panel) = app.get_webview_window("device-panel") else {
-        return;
-    };
+fn setup_panel_event(app: &AppHandle, panel: &tauri::WebviewWindow) {
+    let app_handle = app.clone();
+    panel.on_window_event(move |event| {
+        if let tauri::WindowEvent::Focused(false) = event {
+            if let Some(w) = app_handle.get_webview_window("device-panel") {
+                let _ = w.hide();
+            }
+        }
+    });
+}
 
-    // Toggle: hide if already visible
-    if panel.is_visible().unwrap_or(false) {
-        let _ = panel.hide();
+fn create_panel(app: &AppHandle) -> Result<tauri::WebviewWindow, tauri::Error> {
+    WebviewWindowBuilder::new(app, "device-panel", WebviewUrl::App("panel.html".into()))
+        .title("EasyAudioFlip")
+        .inner_size(280.0, 200.0)
+        .decorations(false)
+        .skip_taskbar(true)
+        .always_on_top(true)
+        .resizable(false)
+        .visible(false)
+        .build()
+}
+
+fn show_popup_panel(app: &AppHandle) {
+    // If panel already exists, toggle visibility
+    if let Some(panel) = app.get_webview_window("device-panel") {
+        if panel.is_visible().unwrap_or(false) {
+            let _ = panel.hide();
+        } else {
+            reposition_and_show(app, &panel);
+        }
         return;
     }
 
-    // Calculate position near tray icon
+    // Panel doesn't exist yet — create it in a separate thread
+    // to avoid WebView2 deadlock on Windows
+    let app_handle = app.clone();
+    std::thread::spawn(move || {
+        match create_panel(&app_handle) {
+            Ok(panel) => {
+                setup_panel_event(&app_handle, &panel);
+                reposition_and_show(&app_handle, &panel);
+            }
+            Err(e) => {
+                eprintln!("Failed to create panel: {}", e);
+            }
+        }
+    });
+}
+
+fn reposition_and_show(app: &AppHandle, panel: &tauri::WebviewWindow) {
     if let Some(tray) = app.tray_by_id("main-tray") {
         if let Ok(Some(rect)) = tray.rect() {
             let panel_width: f64 = 280.0;
@@ -164,30 +203,7 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
         app_state: Mutex::new(app_state),
     });
 
-    // Create panel window at startup (hidden)
-    let panel = WebviewWindowBuilder::new(
-        app,
-        "device-panel",
-        WebviewUrl::App("panel.html".into()),
-    )
-    .title("EasyAudioFlip")
-    .inner_size(280.0, 200.0)
-    .decorations(false)
-    .skip_taskbar(true)
-    .always_on_top(true)
-    .resizable(false)
-    .visible(false)
-    .build()?;
-
-    let app_handle = app.handle().clone();
-    panel.on_window_event(move |event| {
-        if let tauri::WindowEvent::Focused(false) = event {
-            if let Some(w) = app_handle.get_webview_window("device-panel") {
-                let _ = w.hide();
-            }
-        }
-    });
-
+    // Tray icon first (critical)
     let icon = Image::from_bytes(include_bytes!("../icons/icon.png"))
         .expect("Failed to load tray icon");
 
@@ -212,6 +228,16 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
             _ => {}
         })
         .build(app)?;
+
+    // Panel window (non-fatal — will be created on first right-click if this fails)
+    match create_panel(app.handle()) {
+        Ok(panel) => {
+            setup_panel_event(app.handle(), &panel);
+        }
+        Err(e) => {
+            eprintln!("Panel pre-creation failed (will retry on right-click): {}", e);
+        }
+    }
 
     Ok(())
 }
