@@ -32,9 +32,14 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          cache-on-failure: true
 
       - name: Install dependencies
         run: pnpm install
+
+      - name: Build dependencies
+        working-directory: src-tauri
+        run: cargo build --release --locked 2>&1 || true
 
       - name: Build
         run: pnpm tauri build
