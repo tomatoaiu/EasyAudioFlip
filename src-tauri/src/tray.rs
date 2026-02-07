@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use tauri::image::Image;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::webview::WebviewWindowBuilder;
-use tauri::{AppHandle, LogicalPosition, Manager, State, WebviewUrl};
+use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, State, WebviewUrl};
 
 use crate::audio::{self, AppState};
 use crate::config::AppConfig;
@@ -152,22 +152,57 @@ fn show_popup_panel(app: &AppHandle) {
 }
 
 fn reposition_and_show(app: &AppHandle, panel: &tauri::WebviewWindow) {
+    // Calculate panel height from device count
+    let device_count = {
+        let state = app.state::<TrayState>();
+        let s = state.app_state.lock().unwrap();
+        s.all_devices.len()
+    };
+    // Each row 32px + hr(9px) + Quit(32px) + body padding(8px) + buffer(2px)
+    let panel_height: f64 = (device_count as f64 * 32.0 + 51.0).max(80.0);
+    let panel_width: f64 = 280.0;
+
+    let _ = panel.set_size(LogicalSize::new(panel_width, panel_height));
+
     if let Some(tray) = app.tray_by_id("main-tray") {
         if let Ok(Some(rect)) = tray.rect() {
-            let panel_width: f64 = 280.0;
-            let panel_height: f64 = 200.0;
+            let scale = panel.scale_factor().unwrap_or(1.0);
 
+            // Convert Physical coordinates to Logical via scale_factor
             let (tray_x, tray_y) = match rect.position {
-                tauri::Position::Physical(p) => (p.x as f64, p.y as f64),
+                tauri::Position::Physical(p) => (p.x as f64 / scale, p.y as f64 / scale),
                 tauri::Position::Logical(l) => (l.x, l.y),
             };
             let tray_w = match rect.size {
-                tauri::Size::Physical(p) => p.width as f64,
+                tauri::Size::Physical(p) => p.width as f64 / scale,
                 tauri::Size::Logical(l) => l.width,
             };
 
-            let x = tray_x - panel_width + tray_w;
-            let y = tray_y - panel_height;
+            let mut x = tray_x + tray_w - panel_width;
+            let mut y = tray_y - panel_height;
+
+            // Clamp to monitor work_area so panel never overlaps the taskbar
+            if let Ok(Some(monitor)) = panel.current_monitor() {
+                let wa = monitor.work_area();
+                let wa_x = wa.position.x as f64 / scale;
+                let wa_y = wa.position.y as f64 / scale;
+                let wa_w = wa.size.width as f64 / scale;
+                let wa_h = wa.size.height as f64 / scale;
+
+                if x < wa_x {
+                    x = wa_x;
+                }
+                if x + panel_width > wa_x + wa_w {
+                    x = wa_x + wa_w - panel_width;
+                }
+                if y < wa_y {
+                    y = wa_y;
+                }
+                if y + panel_height > wa_y + wa_h {
+                    y = wa_y + wa_h - panel_height;
+                }
+            }
+
             let _ = panel.set_position(LogicalPosition::new(x, y));
         }
     }
