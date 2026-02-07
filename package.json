@@ -6,8 +6,6 @@
     "tauri": "tauri"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "2.10.0",
-    "png-to-ico": "3.0.1",
-    "sharp": "0.34.5"
+    "@tauri-apps/cli": "2.10.0"
   }
 }
