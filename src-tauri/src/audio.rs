@@ -24,12 +24,14 @@ mod platform {
         MMDeviceEnumerator, DEVICE_STATE_ACTIVE,
     };
     use windows::Win32::System::Com::{
-        CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED,
+        CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED, STGM_READ,
     };
     use windows::Win32::System::Com::StructuredStorage::PropVariantToStringAlloc;
 
     pub fn init_com() -> windows::core::Result<()> {
-        unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) }
+        unsafe {
+            CoInitializeEx(None, COINIT_MULTITHREADED).ok()
+        }
     }
 
     pub fn enumerate_devices() -> windows::core::Result<Vec<AudioDevice>> {
@@ -48,7 +50,7 @@ mod platform {
                 let id = id_pwstr.to_string()?;
                 windows::Win32::System::Com::CoTaskMemFree(Some(id_pwstr.0 as *const _));
 
-                let store = device.OpenPropertyStore(0)?; // STGM_READ
+                let store = device.OpenPropertyStore(STGM_READ)?;
                 let prop = store.GetValue(&PKEY_Device_FriendlyName)?;
                 let name_pwstr = PropVariantToStringAlloc(&prop)?;
                 let name = name_pwstr.to_string()?;
