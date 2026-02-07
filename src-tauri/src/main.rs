@@ -4,6 +4,9 @@ mod audio;
 mod config;
 mod tray;
 
+/// Max crash log size before rotation (1 MB).
+const CRASH_LOG_MAX_BYTES: u64 = 1_000_000;
+
 fn setup_crash_log() {
     use std::fs;
     use std::io::Write;
@@ -15,6 +18,15 @@ fn setup_crash_log() {
             .join("com.easyaudioflip.desktop");
         let _ = fs::create_dir_all(&log_dir);
         let log_path = log_dir.join("crash.log");
+
+        // Rotate: if crash.log exceeds the size limit, rename it to crash.log.old
+        if let Ok(meta) = fs::metadata(&log_path) {
+            if meta.len() >= CRASH_LOG_MAX_BYTES {
+                let old_path = log_dir.join("crash.log.old");
+                let _ = fs::rename(&log_path, &old_path);
+            }
+        }
+
         let msg = format!(
             "[{}] PANIC: {}\nLocation: {:?}\n\n",
             chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
