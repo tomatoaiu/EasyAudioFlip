@@ -1,6 +1,5 @@
 use serde::Serialize;
 use std::sync::Mutex;
-use std::time::Instant;
 use tauri::image::Image;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::webview::WebviewWindowBuilder;
@@ -103,24 +102,22 @@ fn handle_left_click(app: &AppHandle) {
 }
 
 fn show_popup_panel(app: &AppHandle) {
-    // Toggle: close existing panel if open
-    if let Some(existing) = app.get_webview_window("device-panel") {
-        let _ = existing.close();
+    let Some(panel) = app.get_webview_window("device-panel") else {
+        return;
+    };
+
+    // Toggle: hide if already visible
+    if panel.is_visible().unwrap_or(false) {
+        let _ = panel.hide();
         return;
     }
 
-    let device_count = {
-        let tray_state = app.state::<TrayState>();
-        let state = tray_state.app_state.lock().unwrap();
-        state.all_devices.len()
-    };
-
-    let panel_width: f64 = 280.0;
-    let panel_height: f64 = (device_count as f64) * 36.0 + 52.0;
-
     // Calculate position near tray icon
-    let position = if let Some(tray) = app.tray_by_id("main-tray") {
+    if let Some(tray) = app.tray_by_id("main-tray") {
         if let Ok(Some(rect)) = tray.rect() {
+            let panel_width: f64 = 280.0;
+            let panel_height: f64 = 200.0;
+
             let (tray_x, tray_y) = match rect.position {
                 tauri::Position::Physical(p) => (p.x as f64, p.y as f64),
                 tauri::Position::Logical(l) => (l.x, l.y),
@@ -129,53 +126,15 @@ fn show_popup_panel(app: &AppHandle) {
                 tauri::Size::Physical(p) => p.width as f64,
                 tauri::Size::Logical(l) => l.width,
             };
-            // Position above the tray icon, aligned to its right edge
+
             let x = tray_x - panel_width + tray_w;
             let y = tray_y - panel_height;
-            LogicalPosition::new(x, y)
-        } else {
-            LogicalPosition::new(100.0, 100.0)
-        }
-    } else {
-        LogicalPosition::new(100.0, 100.0)
-    };
-
-    let builder = WebviewWindowBuilder::new(
-        app,
-        "device-panel",
-        WebviewUrl::App("panel.html".into()),
-    )
-    .title("EasyAudioFlip")
-    .inner_size(panel_width, panel_height)
-    .position(position.x, position.y)
-    .decorations(false)
-    .skip_taskbar(true)
-    .always_on_top(true)
-    .focused(true)
-    .visible(true)
-    .resizable(false);
-
-    match builder.build() {
-        Ok(window) => {
-            let app_handle = app.clone();
-            let created_at = Instant::now();
-            window.on_window_event(move |event| {
-                if let tauri::WindowEvent::Focused(false) = event {
-                    // Ignore focus loss within first 500ms to prevent
-                    // the panel from closing immediately after creation
-                    if created_at.elapsed().as_millis() < 500 {
-                        return;
-                    }
-                    if let Some(w) = app_handle.get_webview_window("device-panel") {
-                        let _ = w.close();
-                    }
-                }
-            });
-        }
-        Err(e) => {
-            eprintln!("Failed to create panel window: {}", e);
+            let _ = panel.set_position(LogicalPosition::new(x, y));
         }
     }
+
+    let _ = panel.show();
+    let _ = panel.set_focus();
 }
 
 pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
@@ -203,6 +162,30 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
 
     app.manage(TrayState {
         app_state: Mutex::new(app_state),
+    });
+
+    // Create panel window at startup (hidden)
+    let panel = WebviewWindowBuilder::new(
+        app,
+        "device-panel",
+        WebviewUrl::App("panel.html".into()),
+    )
+    .title("EasyAudioFlip")
+    .inner_size(280.0, 200.0)
+    .decorations(false)
+    .skip_taskbar(true)
+    .always_on_top(true)
+    .resizable(false)
+    .visible(false)
+    .build()?;
+
+    let app_handle = app.handle().clone();
+    panel.on_window_event(move |event| {
+        if let tauri::WindowEvent::Focused(false) = event {
+            if let Some(w) = app_handle.get_webview_window("device-panel") {
+                let _ = w.hide();
+            }
+        }
     });
 
     let icon = Image::from_bytes(include_bytes!("../icons/icon.png"))

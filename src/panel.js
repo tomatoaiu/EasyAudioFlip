@@ -47,7 +47,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
-      getCurrentWindow().close();
+      getCurrentWindow().hide();
     }
+  });
+
+  // Re-fetch data every time panel becomes visible
+  window.addEventListener("focus", async () => {
+    const devices = await invoke("get_panel_devices");
+    render(devices);
   });
 });
