@@ -4,6 +4,8 @@
 
 A system tray app for Windows 11 that lets you switch audio output devices with a single click.
 
+![demo](assets/demo.gif)
+
 ## Features
 
 - **Left-click**: Cycle through the rotation-enabled devices
