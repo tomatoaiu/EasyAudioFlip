@@ -3,26 +3,35 @@ name: Build
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "*.md"
-      - "LICENSE"
-      - "docs/**"
-      - ".github/**"
-      - ".serena/**"
-      - "scripts/**"
+    paths:
+      - "src/**"
+      - "src-tauri/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/build.yml"
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "*.md"
-      - "LICENSE"
-      - "docs/**"
-      - ".github/**"
-      - ".serena/**"
-      - "scripts/**"
+    paths:
+      - "src/**"
+      - "src-tauri/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/build.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-windows:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: windows-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
