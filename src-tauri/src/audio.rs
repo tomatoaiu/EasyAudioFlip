@@ -24,13 +24,13 @@ mod platform {
         MMDeviceEnumerator, DEVICE_STATE_ACTIVE,
     };
     use windows::Win32::System::Com::{
-        CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED, STGM_READ,
+        CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_APARTMENTTHREADED, STGM_READ,
     };
     use windows::Win32::System::Com::StructuredStorage::PropVariantToStringAlloc;
 
     pub fn init_com() -> windows::core::Result<()> {
         unsafe {
-            CoInitializeEx(None, COINIT_MULTITHREADED).ok()
+            CoInitializeEx(None, COINIT_APARTMENTTHREADED).ok()
         }
     }
 
