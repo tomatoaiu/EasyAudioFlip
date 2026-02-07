@@ -39,6 +39,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Build dependencies
+        working-directory: src-tauri
+        run: cargo build --release --locked 2>&1 || true
+
       - name: Build
         run: pnpm tauri build
 

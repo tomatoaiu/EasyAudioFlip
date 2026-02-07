@@ -3,8 +3,22 @@ name: Build
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "*.md"
+      - "LICENSE"
+      - "docs/**"
+      - ".github/**"
+      - ".serena/**"
+      - "scripts/**"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "*.md"
+      - "LICENSE"
+      - "docs/**"
+      - ".github/**"
+      - ".serena/**"
+      - "scripts/**"
 
 jobs:
   build-windows:
