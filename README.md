@@ -1,40 +1,42 @@
 # EasyAudioFlip
 
-Windows 11 のタスクトレイに常駐し、音声出力デバイスをワンクリックで切り替えるアプリ。
+[日本語](README.ja.md)
 
-## 機能
+A system tray app for Windows 11 that lets you switch audio output devices with a single click.
 
-- **左クリック**: ローテーション対象のデバイスを順番に切り替え
-- **右クリック**: デバイス一覧パネルを表示し、ローテーション対象のオン/オフを切り替え
+## Features
 
-## 必要環境
+- **Left-click**: Cycle through the rotation-enabled devices
+- **Right-click**: Open the device list panel to toggle which devices are included in the rotation
 
-- [mise](https://mise.jdx.dev/) - ツールバージョン管理
+## Prerequisites
 
-## セットアップ
+- [mise](https://mise.jdx.dev/) - Tool version manager
+
+## Setup
 
 ```bash
 mise install
 ```
 
-## 開発
+## Development
 
 ```bash
 pnpm tauri dev
 ```
 
-## ビルド
+## Build
 
 ```bash
 pnpm tauri build
 ```
 
-`src-tauri/target/release/bundle/` に `.msi` インストーラーと `.exe` が生成されます。
+The `.msi` installer and `.exe` will be generated in `src-tauri/target/release/bundle/`.
 
-## リリース
+## Release
 
 ```bash
 node scripts/release.mjs <version>
 ```
 
-バージョンバンプ、コミット、タグ作成、プッシュを一括実行します。プッシュ後に GitHub Actions が Windows 向けインストーラーをビルドしてリリースを作成します。
+Bumps the version, commits, creates a tag, and pushes in one step. After the push, GitHub Actions builds a Windows installer and creates a release.
