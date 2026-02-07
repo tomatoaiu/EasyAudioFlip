@@ -1,7 +1,8 @@
+use serde::Serialize;
 use std::sync::Mutex;
-use tauri::menu::{CheckMenuItemBuilder, MenuBuilder, MenuItemBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager};
+use tauri::webview::WebviewWindowBuilder;
+use tauri::{AppHandle, LogicalPosition, Manager, State, WebviewUrl};
 
 use crate::audio::{self, AppState};
 use crate::config::AppConfig;
@@ -10,35 +11,58 @@ pub struct TrayState {
     pub app_state: Mutex<AppState>,
 }
 
-fn build_tray_menu(
-    app: &AppHandle,
-    state: &AppState,
-) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
-    let mut builder = MenuBuilder::new(app);
+#[derive(Clone, Serialize)]
+pub struct PanelDevice {
+    id: String,
+    name: String,
+    enabled: bool,
+    is_current: bool,
+}
 
-    for device in &state.all_devices {
-        let is_enabled = state.enabled_device_ids.contains(&device.id);
-        let is_current = state.current_device_id.as_ref() == Some(&device.id);
+fn devices_from_state(state: &AppState) -> Vec<PanelDevice> {
+    state
+        .all_devices
+        .iter()
+        .map(|d| PanelDevice {
+            id: d.id.clone(),
+            name: d.name.clone(),
+            enabled: state.enabled_device_ids.contains(&d.id),
+            is_current: state.current_device_id.as_ref() == Some(&d.id),
+        })
+        .collect()
+}
 
-        let label = if is_current {
-            format!("\u{25B6} {}", device.name)
-        } else {
-            device.name.clone()
-        };
+#[tauri::command]
+pub fn get_panel_devices(state: State<TrayState>) -> Vec<PanelDevice> {
+    let s = state.app_state.lock().unwrap();
+    devices_from_state(&s)
+}
 
-        let check_item = CheckMenuItemBuilder::with_id(&device.id, &label)
-            .checked(is_enabled)
-            .build(app)?;
+#[tauri::command]
+pub fn toggle_panel_device(
+    state: State<TrayState>,
+    app: AppHandle,
+    device_id: String,
+) -> Vec<PanelDevice> {
+    let mut s = state.app_state.lock().unwrap();
 
-        builder = builder.item(&check_item);
+    if s.enabled_device_ids.contains(&device_id) {
+        s.enabled_device_ids.remove(&device_id);
+    } else {
+        s.enabled_device_ids.insert(device_id);
     }
 
-    builder = builder.separator();
+    let config = AppConfig {
+        enabled_device_ids: s.enabled_device_ids.clone(),
+    };
+    let _ = config.save(&app);
 
-    let quit_item = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
-    builder = builder.item(&quit_item);
+    devices_from_state(&s)
+}
 
-    builder.build()
+#[tauri::command]
+pub fn quit_app(app: AppHandle) {
+    app.exit(0);
 }
 
 fn get_tooltip_text(state: &AppState) -> String {
@@ -63,14 +87,10 @@ fn handle_left_click(app: &AppHandle) {
     match audio::toggle_next_device(&mut state) {
         Ok(Some(new_device)) => {
             let tooltip = format!("EasyAudioFlip - {}", new_device.name);
-            let new_menu = build_tray_menu(app, &state).ok();
             drop(state);
 
             if let Some(tray) = app.tray_by_id("main-tray") {
                 let _ = tray.set_tooltip(Some(&tooltip));
-                if let Some(menu) = new_menu {
-                    let _ = tray.set_menu(Some(menu));
-                }
             }
         }
         Ok(None) => {}
@@ -80,25 +100,72 @@ fn handle_left_click(app: &AppHandle) {
     }
 }
 
-fn handle_device_toggle(app: &AppHandle, device_id: &str) {
-    let tray_state = app.state::<TrayState>();
-    let mut state = tray_state.app_state.lock().unwrap();
-
-    if state.enabled_device_ids.contains(device_id) {
-        state.enabled_device_ids.remove(device_id);
-    } else {
-        state.enabled_device_ids.insert(device_id.to_string());
+fn show_popup_panel(app: &AppHandle) {
+    // Toggle: close existing panel if open
+    if let Some(existing) = app.get_webview_window("device-panel") {
+        let _ = existing.close();
+        return;
     }
 
-    let config = AppConfig {
-        enabled_device_ids: state.enabled_device_ids.clone(),
+    let device_count = {
+        let tray_state = app.state::<TrayState>();
+        let state = tray_state.app_state.lock().unwrap();
+        state.all_devices.len()
     };
-    let _ = config.save(app);
 
-    if let Ok(new_menu) = build_tray_menu(app, &state) {
-        drop(state);
-        if let Some(tray) = app.tray_by_id("main-tray") {
-            let _ = tray.set_menu(Some(new_menu));
+    let panel_width: f64 = 280.0;
+    let panel_height: f64 = (device_count as f64) * 36.0 + 52.0;
+
+    // Calculate position near tray icon
+    let position = if let Some(tray) = app.tray_by_id("main-tray") {
+        if let Ok(Some(rect)) = tray.rect() {
+            let (tray_x, tray_y) = match rect.position {
+                tauri::Position::Physical(p) => (p.x as f64, p.y as f64),
+                tauri::Position::Logical(l) => (l.x, l.y),
+            };
+            let tray_w = match rect.size {
+                tauri::Size::Physical(p) => p.width as f64,
+                tauri::Size::Logical(l) => l.width,
+            };
+            // Position above the tray icon, aligned to its right edge
+            let x = tray_x - panel_width + tray_w;
+            let y = tray_y - panel_height;
+            LogicalPosition::new(x, y)
+        } else {
+            LogicalPosition::new(100.0, 100.0)
+        }
+    } else {
+        LogicalPosition::new(100.0, 100.0)
+    };
+
+    let builder = WebviewWindowBuilder::new(
+        app,
+        "device-panel",
+        WebviewUrl::App("panel.html".into()),
+    )
+    .title("EasyAudioFlip")
+    .inner_size(panel_width, panel_height)
+    .position(position.x, position.y)
+    .decorations(false)
+    .skip_taskbar(true)
+    .always_on_top(true)
+    .focused(true)
+    .visible(true)
+    .resizable(false);
+
+    match builder.build() {
+        Ok(window) => {
+            let app_handle = app.clone();
+            window.on_window_event(move |event| {
+                if let tauri::WindowEvent::Focused(false) = event {
+                    if let Some(w) = app_handle.get_webview_window("device-panel") {
+                        let _ = w.close();
+                    }
+                }
+            });
+        }
+        Err(e) => {
+            eprintln!("Failed to create panel window: {}", e);
         }
     }
 }
@@ -125,33 +192,29 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
     };
 
     let tooltip = get_tooltip_text(&app_state);
-    let menu = build_tray_menu(app.handle(), &app_state)?;
 
     app.manage(TrayState {
         app_state: Mutex::new(app_state),
     });
 
     TrayIconBuilder::with_id("main-tray")
-        .menu(&menu)
-        .show_menu_on_left_click(false)
         .tooltip(&tooltip)
-        .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click {
+        .on_tray_icon_event(|tray, event| match event {
+            TrayIconEvent::Click {
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
                 ..
-            } = event
-            {
+            } => {
                 handle_left_click(tray.app_handle());
             }
-        })
-        .on_menu_event(|app, event| match event.id().as_ref() {
-            "quit" => {
-                app.exit(0);
+            TrayIconEvent::Click {
+                button: MouseButton::Right,
+                button_state: MouseButtonState::Up,
+                ..
+            } => {
+                show_popup_panel(tray.app_handle());
             }
-            device_id => {
-                handle_device_toggle(app, device_id);
-            }
+            _ => {}
         })
         .build(app)?;
 
