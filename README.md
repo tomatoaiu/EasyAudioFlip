@@ -7,12 +7,6 @@ Windows 11 のタスクトレイに常駐し、音声出力デバイスをワン
 - **左クリック**: ローテーション対象のデバイスを順番に切り替え
 - **右クリック**: デバイス一覧パネルを表示し、ローテーション対象のオン/オフを切り替え
 
-## 技術スタック
-
-- [Tauri v2](https://v2.tauri.app/) - 軽量デスクトップアプリフレームワーク
-- Rust - バックエンド (Windows Core Audio API)
-- [com-policy-config](https://crates.io/crates/com-policy-config) - デフォルト音声デバイス切り替え
-
 ## 必要環境
 
 - [mise](https://mise.jdx.dev/) - ツールバージョン管理
@@ -21,7 +15,6 @@ Windows 11 のタスクトレイに常駐し、音声出力デバイスをワン
 
 ```bash
 mise install
-pnpm install
 ```
 
 ## 開発
