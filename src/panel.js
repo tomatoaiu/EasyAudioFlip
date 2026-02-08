@@ -45,6 +45,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     invoke("quit_app");
   });
 
+  // Autostart toggle
+  const autostartToggle = document.getElementById("autostart-toggle");
+
+  async function loadAutostartState() {
+    try {
+      autostartToggle.checked = await invoke("is_autostart_enabled");
+    } catch (err) {
+      console.error("Failed to load autostart state:", err);
+    }
+  }
+
+  autostartToggle.addEventListener("change", async (e) => {
+    const shouldEnable = e.target.checked;
+    try {
+      await invoke(shouldEnable ? "enable_autostart" : "disable_autostart");
+    } catch (err) {
+      console.error("Failed to toggle autostart:", err);
+      autostartToggle.checked = !shouldEnable;
+    }
+  });
+
+  await loadAutostartState();
+
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       getCurrentWindow().hide();
@@ -55,5 +78,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.addEventListener("focus", async () => {
     const devices = await invoke("get_panel_devices");
     render(devices);
+    await loadAutostartState();
   });
 });
