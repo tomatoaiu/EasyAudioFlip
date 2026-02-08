@@ -158,8 +158,8 @@ fn reposition_and_show(app: &AppHandle, panel: &tauri::WebviewWindow) {
         let s = state.app_state.lock().unwrap();
         s.all_devices.len()
     };
-    // Each row 32px + hr(9px) + Quit(32px) + body padding(8px) + buffer(2px)
-    let panel_height: f64 = (device_count as f64 * 32.0 + 51.0).max(80.0);
+    // Each row 32px + hr(9px) + autostart row(36px) + hr(9px) + Quit(32px) + body padding(8px) + buffer(2px)
+    let panel_height: f64 = (device_count as f64 * 32.0 + 96.0).max(120.0);
     let panel_width: f64 = 280.0;
 
     let _ = panel.set_size(LogicalSize::new(panel_width, panel_height));
