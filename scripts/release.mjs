@@ -5,9 +5,10 @@
  * Example: node scripts/release.mjs 0.3.0
  *
  * 1. Bump version in package.json, Cargo.toml, tauri.conf.json
- * 2. git add -u && git commit
- * 3. git tag v<version>
- * 4. git push && git push --tags
+ * 2. Sync Cargo.lock
+ * 3. git add -u && git commit
+ * 4. git tag v<version>
+ * 5. git push && git push --tags
  */
 
 import { execSync } from "child_process";
@@ -36,14 +37,17 @@ function run(cmd) {
 // 1. Bump version
 run(`node scripts/bump-version.mjs ${newVersion}`);
 
-// 2. Commit
+// 2. Sync Cargo.lock with updated Cargo.toml version
+run(`cargo generate-lockfile --manifest-path src-tauri/Cargo.toml`);
+
+// 3. Commit
 run(`git add -u`);
 run(`git commit -m "chore: bump version to ${newVersion}"`);
 
-// 3. Tag
+// 4. Tag
 run(`git tag v${newVersion}`);
 
-// 4. Push
+// 5. Push
 run(`git push`);
 run(`git push --tags`);
 
