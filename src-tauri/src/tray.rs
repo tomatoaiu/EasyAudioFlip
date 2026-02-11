@@ -138,15 +138,13 @@ fn show_popup_panel(app: &AppHandle) {
     // Panel doesn't exist yet — create it in a separate thread
     // to avoid WebView2 deadlock on Windows
     let app_handle = app.clone();
-    std::thread::spawn(move || {
-        match create_panel(&app_handle) {
-            Ok(panel) => {
-                setup_panel_event(&app_handle, &panel);
-                reposition_and_show(&app_handle, &panel);
-            }
-            Err(e) => {
-                eprintln!("Failed to create panel: {}", e);
-            }
+    std::thread::spawn(move || match create_panel(&app_handle) {
+        Ok(panel) => {
+            setup_panel_event(&app_handle, &panel);
+            reposition_and_show(&app_handle, &panel);
+        }
+        Err(e) => {
+            eprintln!("Failed to create panel: {}", e);
         }
     });
 }
@@ -239,8 +237,8 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
     });
 
     // Tray icon first (critical)
-    let icon = Image::from_bytes(include_bytes!("../icons/icon.png"))
-        .expect("Failed to load tray icon");
+    let icon =
+        Image::from_bytes(include_bytes!("../icons/icon.png")).expect("Failed to load tray icon");
 
     TrayIconBuilder::with_id("main-tray")
         .icon(icon)
@@ -270,7 +268,10 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
             setup_panel_event(app.handle(), &panel);
         }
         Err(e) => {
-            eprintln!("Panel pre-creation failed (will retry on right-click): {}", e);
+            eprintln!(
+                "Panel pre-creation failed (will retry on right-click): {}",
+                e
+            );
         }
     }
 

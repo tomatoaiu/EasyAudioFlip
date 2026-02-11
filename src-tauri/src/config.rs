@@ -4,17 +4,9 @@ use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AppConfig {
     pub enabled_device_ids: HashSet<String>,
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            enabled_device_ids: HashSet::new(),
-        }
-    }
 }
 
 impl AppConfig {

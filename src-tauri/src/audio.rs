@@ -20,18 +20,16 @@ mod platform {
     use windows::core::PCWSTR;
     use windows::Win32::Devices::FunctionDiscovery::PKEY_Device_FriendlyName;
     use windows::Win32::Media::Audio::{
-        eConsole, eCommunications, eMultimedia, eRender, IMMDeviceEnumerator,
-        MMDeviceEnumerator, DEVICE_STATE_ACTIVE,
+        eCommunications, eConsole, eMultimedia, eRender, IMMDeviceEnumerator, MMDeviceEnumerator,
+        DEVICE_STATE_ACTIVE,
     };
+    use windows::Win32::System::Com::StructuredStorage::PropVariantToStringAlloc;
     use windows::Win32::System::Com::{
         CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_APARTMENTTHREADED, STGM_READ,
     };
-    use windows::Win32::System::Com::StructuredStorage::PropVariantToStringAlloc;
 
     pub fn init_com() -> windows::core::Result<()> {
-        unsafe {
-            CoInitializeEx(None, COINIT_APARTMENTTHREADED).ok()
-        }
+        unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED).ok() }
     }
 
     pub fn enumerate_devices() -> windows::core::Result<Vec<AudioDevice>> {
