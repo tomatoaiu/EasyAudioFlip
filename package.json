@@ -3,9 +3,11 @@
   "private": true,
   "version": "0.3.2",
   "scripts": {
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "2.10.0"
+    "@tauri-apps/cli": "2.10.0",
+    "lefthook": "2.1.0"
   }
 }
