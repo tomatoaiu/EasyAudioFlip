@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: cargo fmt
+      root: src-tauri/
+      glob: "*.rs"
+      run: cargo fmt --check
+
+    - name: cargo clippy
+      root: src-tauri/
+      glob: "*.rs"
+      run: cargo clippy -- -D warnings
