@@ -68,6 +68,19 @@ body {
   text-overflow: ellipsis;
 }
 
+.device-name-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: #e0e0e0;
+  background: #1f1f1f;
+  border: 1px solid #3b82f6;
+  border-radius: 3px;
+  padding: 2px 4px;
+  outline: none;
+  user-select: text;
+}
+
 .current-marker {
   color: #3b82f6;
   font-size: 11px;

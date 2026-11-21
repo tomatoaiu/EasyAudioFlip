@@ -20,17 +20,40 @@ pub struct PanelDevice {
     is_current: bool,
 }
 
+fn display_name<'a>(state: &'a AppState, id: &str, system_name: &'a str) -> &'a str {
+    state
+        .device_names
+        .get(id)
+        .map(String::as_str)
+        .filter(|name| !name.is_empty())
+        .unwrap_or(system_name)
+}
+
 fn devices_from_state(state: &AppState) -> Vec<PanelDevice> {
     state
         .all_devices
         .iter()
         .map(|d| PanelDevice {
             id: d.id.clone(),
-            name: d.name.clone(),
+            name: display_name(state, &d.id, &d.name).to_string(),
             enabled: state.enabled_device_ids.contains(&d.id),
             is_current: state.current_device_id.as_ref() == Some(&d.id),
         })
         .collect()
+}
+
+fn save_config(app: &AppHandle, state: &AppState) {
+    let config = AppConfig {
+        enabled_device_ids: state.enabled_device_ids.clone(),
+        device_names: state.device_names.clone(),
+    };
+    let _ = config.save(app);
+}
+
+fn refresh_tooltip(app: &AppHandle, state: &AppState) {
+    if let Some(tray) = app.tray_by_id("main-tray") {
+        let _ = tray.set_tooltip(Some(&get_tooltip_text(state)));
+    }
 }
 
 #[tauri::command]
@@ -53,11 +76,37 @@ pub fn toggle_panel_device(
         s.enabled_device_ids.insert(device_id);
     }
 
-    let config = AppConfig {
-        enabled_device_ids: s.enabled_device_ids.clone(),
-    };
-    let _ = config.save(&app);
+    save_config(&app, &s);
 
+    devices_from_state(&s)
+}
+
+#[tauri::command]
+pub fn rename_panel_device(
+    state: State<TrayState>,
+    app: AppHandle,
+    device_id: String,
+    name: String,
+) -> Vec<PanelDevice> {
+    let mut s = state.app_state.lock().unwrap();
+    let Some(system_name) = s
+        .all_devices
+        .iter()
+        .find(|d| d.id == device_id)
+        .map(|d| d.name.clone())
+    else {
+        return devices_from_state(&s);
+    };
+
+    let trimmed = name.trim();
+    if trimmed.is_empty() || trimmed == system_name {
+        s.device_names.remove(&device_id);
+    } else {
+        s.device_names.insert(device_id, trimmed.to_string());
+    }
+
+    save_config(&app, &s);
+    refresh_tooltip(&app, &s);
     devices_from_state(&s)
 }
 
@@ -69,13 +118,13 @@ pub fn quit_app(app: AppHandle) {
 fn get_tooltip_text(state: &AppState) -> String {
     match &state.current_device_id {
         Some(id) => {
-            let name = state
+            let system_name = state
                 .all_devices
                 .iter()
                 .find(|d| &d.id == id)
                 .map(|d| d.name.as_str())
                 .unwrap_or("Unknown");
-            format!("EasyAudioFlip - {}", name)
+            format!("EasyAudioFlip - {}", display_name(state, id, system_name))
         }
         None => "EasyAudioFlip".to_string(),
     }
@@ -86,13 +135,8 @@ fn handle_left_click(app: &AppHandle) {
     let mut state = tray_state.app_state.lock().unwrap();
 
     match audio::toggle_next_device(&mut state) {
-        Ok(Some(new_device)) => {
-            let tooltip = format!("EasyAudioFlip - {}", new_device.name);
-            drop(state);
-
-            if let Some(tray) = app.tray_by_id("main-tray") {
-                let _ = tray.set_tooltip(Some(&tooltip));
-            }
+        Ok(Some(_)) => {
+            refresh_tooltip(app, &state);
         }
         Ok(None) => {}
         Err(e) => {
@@ -228,6 +272,7 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
         all_devices,
         enabled_device_ids: enabled_ids,
         current_device_id,
+        device_names: config.device_names,
     };
 
     let tooltip = get_tooltip_text(&app_state);

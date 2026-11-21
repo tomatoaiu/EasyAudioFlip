@@ -81,6 +81,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             tray::get_panel_devices,
             tray::toggle_panel_device,
+            tray::rename_panel_device,
             tray::quit_app,
             is_autostart_enabled,
             enable_autostart,
