@@ -16,13 +16,15 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'dtolnay/rust-toolchain@stable'
         - 'swatinem/rust-cache@v2.9.3'
+    '.github/workflows/release-please.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'googleapis/release-please-action@v5.0.0'
     '.github/workflows/release.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'dtolnay/rust-toolchain@stable'
         - 'mozilla-actions/sccache-action@v0.0.11'
         - 'pnpm/action-setup@v6.1.1'
-        - 'softprops/action-gh-release@v3.0.4'
         - 'swatinem/rust-cache@v2.9.3'
     '.github/workflows/verify-lockfile.yml':
         - 'actions/checkout@v7.0.1'
@@ -52,6 +54,11 @@ dependencies:
         commit: 'sha1-39008827e6b4319a349e9a42dfc90579dd25f1ca'
         owner_id: 1940490
         repo_id: 260749683
+    'googleapis/release-please-action@v5.0.0':
+        ref: 'v5.0.0'
+        commit: 'sha1-45996ed1f6d02564a971a2fa1b5860e934307cf7'
+        owner_id: 16785467
+        repo_id: 262236530
     'mozilla-actions/sccache-action@v0.0.11':
         ref: 'v0.0.11'
         commit: 'sha1-fc920bf0ec8de6ee65d409111f7ec508035751ba'
@@ -62,11 +69,6 @@ dependencies:
         commit: 'sha1-73e46992e05b19abd31f2f3c20e0e7370d762115'
         owner_id: 21320719
         repo_id: 262289747
-    'softprops/action-gh-release@v3.0.4':
-        ref: 'v3.0.4'
-        commit: 'sha1-8a0cd651e5b2365bd640854a3fa5dfc70e4875f3'
-        owner_id: 2242
-        repo_id: 204253808
     'swatinem/rust-cache@v2.9.3':
         ref: 'v2.9.3'
         commit: 'sha1-d1527c8f67ef9af357290475d4af4b0fab8f12e0'
