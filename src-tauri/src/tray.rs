@@ -50,10 +50,25 @@ fn save_config(app: &AppHandle, state: &AppState) {
     let _ = config.save(app);
 }
 
-fn refresh_tooltip(app: &AppHandle, state: &AppState) {
+fn refresh_tray(app: &AppHandle, state: &AppState) {
     if let Some(tray) = app.tray_by_id("main-tray") {
         let _ = tray.set_tooltip(Some(&get_tooltip_text(state)));
+        if let Some(icon) = current_tray_icon(state) {
+            let _ = tray.set_icon(Some(icon));
+        }
     }
+}
+
+fn current_tray_icon(state: &AppState) -> Option<Image<'static>> {
+    let id = state.current_device_id.as_deref()?;
+    let system_name = state
+        .all_devices
+        .iter()
+        .find(|device| device.id == id)
+        .map(|device| device.name.as_str())
+        .unwrap_or("");
+    let mark = crate::icon::icon_mark(display_name(state, id, system_name))?;
+    crate::icon::render_mark_icon(&mark)
 }
 
 #[tauri::command]
@@ -106,7 +121,7 @@ pub fn rename_panel_device(
     }
 
     save_config(&app, &s);
-    refresh_tooltip(&app, &s);
+    refresh_tray(&app, &s);
     devices_from_state(&s)
 }
 
@@ -118,7 +133,7 @@ pub fn select_panel_device(
 ) -> Result<Vec<PanelDevice>, String> {
     let mut s = state.app_state.lock().unwrap();
     audio::select_device(&mut s, &device_id)?;
-    refresh_tooltip(&app, &s);
+    refresh_tray(&app, &s);
     Ok(devices_from_state(&s))
 }
 
@@ -148,7 +163,7 @@ fn handle_left_click(app: &AppHandle) {
 
     match audio::toggle_next_device(&mut state) {
         Ok(Some(_)) => {
-            refresh_tooltip(app, &state);
+            refresh_tray(app, &state);
         }
         Ok(None) => {}
         Err(e) => {
@@ -288,14 +303,13 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
     };
 
     let tooltip = get_tooltip_text(&app_state);
+    let icon = current_tray_icon(&app_state).unwrap_or_else(|| {
+        Image::from_bytes(include_bytes!("../icons/icon.png")).expect("Failed to load tray icon")
+    });
 
     app.manage(TrayState {
         app_state: Mutex::new(app_state),
     });
-
-    // Tray icon first (critical)
-    let icon =
-        Image::from_bytes(include_bytes!("../icons/icon.png")).expect("Failed to load tray icon");
 
     TrayIconBuilder::with_id("main-tray")
         .icon(icon)
