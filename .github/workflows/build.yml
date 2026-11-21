@@ -10,6 +10,16 @@ on:
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - ".github/workflows/build.yml"
+  # main の push だけが、後続 PR から読める default-branch cache を書く。
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "src-tauri/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/build.yml"
 
 permissions:
   contents: read
@@ -58,6 +68,7 @@ jobs:
         run: pnpm tauri build
 
       - name: Upload artifacts
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7.0.2
         with:
           name: EasyAudioFlip-windows
