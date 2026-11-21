@@ -28,7 +28,8 @@ body {
   transition: background 0.1s;
 }
 
-.device-row:hover {
+.device-row:hover,
+.device-row.current {
   background: #3d3d3d;
 }
 

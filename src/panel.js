@@ -21,15 +21,23 @@ function render(devices) {
     row.appendChild(name);
 
     if (d.is_current) {
+      row.classList.add("current");
       const marker = document.createElement("span");
       marker.className = "current-marker";
       marker.textContent = "\u25B6";
       row.appendChild(marker);
     }
 
+    checkbox.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const updated = await invoke("toggle_panel_device", { deviceId: d.id });
+      render(updated);
+    });
+
     let clickTimer = null;
     row.addEventListener("click", (e) => {
-      if (row.classList.contains("editing")) {
+      if (row.classList.contains("editing") || e.target === checkbox) {
         return;
       }
       e.preventDefault();
@@ -38,7 +46,7 @@ function render(devices) {
       }
       clearTimeout(clickTimer);
       clickTimer = setTimeout(async () => {
-        const updated = await invoke("toggle_panel_device", { deviceId: d.id });
+        const updated = await invoke("select_panel_device", { deviceId: d.id });
         render(updated);
       }, 220);
     });
