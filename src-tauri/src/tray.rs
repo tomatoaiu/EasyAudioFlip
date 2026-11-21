@@ -111,6 +111,18 @@ pub fn rename_panel_device(
 }
 
 #[tauri::command]
+pub fn select_panel_device(
+    state: State<TrayState>,
+    app: AppHandle,
+    device_id: String,
+) -> Result<Vec<PanelDevice>, String> {
+    let mut s = state.app_state.lock().unwrap();
+    audio::select_device(&mut s, &device_id)?;
+    refresh_tooltip(&app, &s);
+    Ok(devices_from_state(&s))
+}
+
+#[tauri::command]
 pub fn quit_app(app: AppHandle) {
     app.exit(0);
 }

@@ -148,3 +148,19 @@ pub fn toggle_next_device(state: &mut AppState) -> Result<Option<AudioDevice>, S
 
     Ok(Some(next_device))
 }
+
+pub fn select_device(state: &mut AppState, device_id: &str) -> Result<(), String> {
+    if !state
+        .all_devices
+        .iter()
+        .any(|device| device.id == device_id)
+    {
+        return Err(format!("unknown device: {device_id}"));
+    }
+    if state.current_device_id.as_deref() == Some(device_id) {
+        return Ok(());
+    }
+    set_default_device(device_id).map_err(|e| format!("{:?}", e))?;
+    state.current_device_id = Some(device_id.to_string());
+    Ok(())
+}
