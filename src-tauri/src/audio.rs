@@ -18,16 +18,16 @@ pub struct AppState {
 #[cfg(windows)]
 mod platform {
     use super::AudioDevice;
-    use windows::core::PCWSTR;
     use windows::Win32::Devices::FunctionDiscovery::PKEY_Device_FriendlyName;
     use windows::Win32::Media::Audio::{
-        eCommunications, eConsole, eMultimedia, eRender, IMMDeviceEnumerator, MMDeviceEnumerator,
-        DEVICE_STATE_ACTIVE,
+        DEVICE_STATE_ACTIVE, IMMDeviceEnumerator, MMDeviceEnumerator, eCommunications, eConsole,
+        eMultimedia, eRender,
     };
     use windows::Win32::System::Com::StructuredStorage::PropVariantToStringAlloc;
     use windows::Win32::System::Com::{
-        CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_APARTMENTTHREADED, STGM_READ,
+        CLSCTX_ALL, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, STGM_READ,
     };
+    use windows::core::PCWSTR;
 
     pub fn init_com() -> windows::core::Result<()> {
         unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED).ok() }

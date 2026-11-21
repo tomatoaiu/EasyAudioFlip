@@ -33,8 +33,8 @@ fn render_mark_rgba(mark: &str) -> Option<Vec<u8>> {
 
     use windows::Win32::Foundation::COLORREF;
     use windows::Win32::Graphics::Gdi::{
-        CreateCompatibleDC, CreateDIBSection, DeleteDC, DeleteObject, SelectObject, SetBkColor,
-        SetBkMode, SetTextColor, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, OPAQUE,
+        BI_RGB, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleDC, CreateDIBSection, DIB_RGB_COLORS,
+        DeleteDC, DeleteObject, OPAQUE, SelectObject, SetBkColor, SetBkMode, SetTextColor,
     };
 
     let mut units: Vec<u16> = mark.encode_utf16().collect();
@@ -104,13 +104,13 @@ fn draw_mark(
     font_height: i32,
     size: i32,
 ) -> bool {
-    use windows::core::{HSTRING, PCWSTR};
     use windows::Win32::Foundation::RECT;
     use windows::Win32::Graphics::Gdi::{
-        CreateFontW, DeleteObject, DrawTextW, GetGlyphIndicesW, SelectObject, ANTIALIASED_QUALITY,
-        CLIP_DEFAULT_PRECIS, DEFAULT_CHARSET, DT_CENTER, DT_SINGLELINE, DT_VCENTER,
-        OUT_DEFAULT_PRECIS,
+        ANTIALIASED_QUALITY, CLIP_DEFAULT_PRECIS, CreateFontW, DEFAULT_CHARSET, DT_CENTER,
+        DT_SINGLELINE, DT_VCENTER, DeleteObject, DrawTextW, GetGlyphIndicesW, OUT_DEFAULT_PRECIS,
+        SelectObject,
     };
+    use windows::core::{HSTRING, PCWSTR};
 
     const FACES: [&str; 4] = ["Yu Gothic UI", "Meiryo UI", "MS UI Gothic", "Segoe UI"];
     let mut text = units[..glyph_len as usize].to_vec();
