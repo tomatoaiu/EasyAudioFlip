@@ -24,16 +24,16 @@ fn setup_crash_log() {
         let log_path = log_dir.join("crash.log");
 
         // Rotate: if crash.log exceeds the size limit, rename it to crash.log.old
-        if let Ok(meta) = fs::metadata(&log_path) {
-            if meta.len() >= CRASH_LOG_MAX_BYTES {
-                let old_path = log_dir.join("crash.log.old");
-                let _ = fs::rename(&log_path, &old_path);
-            }
+        if let Ok(meta) = fs::metadata(&log_path)
+            && meta.len() >= CRASH_LOG_MAX_BYTES
+        {
+            let old_path = log_dir.join("crash.log.old");
+            let _ = fs::rename(&log_path, &old_path);
         }
 
         let msg = format!(
             "[{}] PANIC: {}\nLocation: {:?}\n\n",
-            chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+            jiff::Zoned::now().strftime("%Y-%m-%d %H:%M:%S"),
             info,
             info.location(),
         );
