@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/v17.6.1/schemas/config.json",
+  "packages": {
+    ".": {
+      "include-component-in-tag": false,
+      "include-v-in-tag": true,
+      "release-type": "node",
+      "skip-github-release": true,
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "src-tauri/Cargo.toml",
+          "jsonpath": "$.package.version"
+        },
+        {
+          "type": "json",
+          "path": "src-tauri/tauri.conf.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "toml",
+          "path": "src-tauri/Cargo.lock",
+          "jsonpath": "$.package[?(@.name.value=='easy-audio-flip' && !@.source)].version"
+        }
+      ]
+    }
+  }
+}

@@ -37,8 +37,4 @@ pnpm tauri build
 
 ### リリース
 
-```bash
-node scripts/release.mjs <version>
-```
-
-バージョンバンプ、コミット、タグ作成、プッシュを一括実行します。プッシュ後に GitHub Actions が Windows 向けインストーラーをビルドしてリリースを作成します。
+`main` にリリース対象のコミットがあると、Release Please が pull request を作る。その pull request をマージすると、Windows 向けインストーラーをビルドして GitHub Release を公開する。`v0.3.3` の次は `v0.4.0`。
