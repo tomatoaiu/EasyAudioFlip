@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioDevice {
@@ -12,6 +12,7 @@ pub struct AppState {
     pub all_devices: Vec<AudioDevice>,
     pub enabled_device_ids: HashSet<String>,
     pub current_device_id: Option<String>,
+    pub device_names: HashMap<String, String>,
 }
 
 #[cfg(windows)]

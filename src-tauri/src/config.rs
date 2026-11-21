@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
@@ -7,6 +7,8 @@ use tauri::{AppHandle, Manager};
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AppConfig {
     pub enabled_device_ids: HashSet<String>,
+    #[serde(default)]
+    pub device_names: HashMap<String, String>,
 }
 
 impl AppConfig {
