@@ -2,6 +2,7 @@
 
 mod audio;
 mod config;
+mod icon;
 mod tray;
 
 use tauri::{AppHandle, Manager};

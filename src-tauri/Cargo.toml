@@ -21,5 +21,6 @@ windows = { version = "0.61", features = [
     "Win32_Devices_FunctionDiscovery",
     "Win32_UI_Shell_PropertiesSystem",
     "Win32_System_Com_StructuredStorage",
+    "Win32_Graphics_Gdi",
 ] }
 com-policy-config = "0.6"
